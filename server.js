@@ -54,29 +54,42 @@ async function fetchCleanShopeeVideo(shopeeUrl) {
     throw new Error(data?.error || 'Gagal mengekstrak video');
   }
 
-  // Ambil opsi kualitas terbaik
-  let bestStreamUrl = null;
-  let qualityName = 'HD (No Watermark)';
-  
+  // 1. Download URL: Tetap prioritaskan KUALITAS TERTINGGI (1280p / 960p / 720p)
+  let bestDownloadUrl = null;
+  let downloadQuality = '1280p';
+  const maxQualities = ['1280p', '960p', '720P', '640p', '540P', '360P'];
   if (data.stream) {
-    const qualities = ['1280p', '960p', '720P', '640p', '540P', '360P'];
-    for (const q of qualities) {
+    for (const q of maxQualities) {
       if (data.stream[q] && data.stream[q].stream) {
-        bestStreamUrl = data.stream[q].stream;
-        qualityName = q;
+        bestDownloadUrl = data.stream[q].stream;
+        downloadQuality = q;
         break;
       }
     }
   }
 
-  if (!bestStreamUrl && data.preview) {
-    bestStreamUrl = data.preview;
+  // 2. Preview URL: Khusus web player iOS Safari (prioritaskan codec H264 960p/720p agar pasti bisa diplay)
+  let previewUrl = null;
+  if (data.stream) {
+    const h264Qualities = ['960p', '720P', '540P', '360P', '1280p', '640p'];
+    for (const q of h264Qualities) {
+      if (data.stream[q] && data.stream[q].stream) {
+        if (data.stream[q].codec === 'H264' || !previewUrl) {
+          previewUrl = data.stream[q].stream;
+          if (data.stream[q].codec === 'H264') break;
+        }
+      }
+    }
   }
+
+  if (!bestDownloadUrl && data.preview) bestDownloadUrl = data.preview;
+  if (!previewUrl) previewUrl = bestDownloadUrl;
 
   return {
     username: data.username || 'Kreator Shopee',
-    streamUrl: bestStreamUrl,
-    quality: qualityName,
+    streamUrl: bestDownloadUrl,     // Untuk tombol Download Utama (1280p kualitas tertinggi)
+    previewUrl: previewUrl,         // Untuk Video Preview Player (H.264 lancar di iOS)
+    quality: downloadQuality,
     streams: data.stream || {}
   };
 }
@@ -157,6 +170,7 @@ app.get('/api/download', async (req, res) => {
             author: cleanData.username,
             cover: '',
             video_url: cleanData.streamUrl,
+            preview_url: cleanData.previewUrl,
             quality: cleanData.quality,
             streams: cleanData.streams,
             no_watermark: true

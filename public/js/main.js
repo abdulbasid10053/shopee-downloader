@@ -47,19 +47,23 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingStatus.style.display = 'none';
 
         if (result.status && result.data) {
-          const { title, author, video_url, quality, no_watermark, streams } = result.data;
+          const { title, author, video_url, preview_url, quality, no_watermark, streams } = result.data;
 
           videoTitle.textContent = title || 'Shopee Video';
-          videoAuthor.textContent = `Kreator: @${author || 'Shopee User'}${no_watermark ? ' • ✅ Tanpa Watermark (HD)' : ''}`;
-          videoPreview.src = `/api/proxy?url=${encodeURIComponent(video_url)}`;
+          videoAuthor.textContent = `Kreator: @${author || 'Shopee User'}${no_watermark ? ` • ✅ Tanpa Watermark (${quality || 'HD'})` : ''}`;
+          
+          // 1. Set preview video player (menggunakan stream yang ramah iOS Safari H.264)
+          const finalPreview = preview_url || video_url;
+          videoPreview.src = `/api/proxy?url=${encodeURIComponent(finalPreview)}`;
+          videoPreview.load();
 
           const rawVideoTitle = title || 'Shopee_Video_NoWatermark';
           const cleanFileName = rawVideoTitle.replace(/[<>:"/\\|?*#]/g, '').trim().replace(/\s+/g, '_').substring(0, 80);
 
-          // Tombol Download Utama
+          // 2. Tombol Download Utama (TETAP KUALITAS TERTINGGI: 1280p / 960p)
           btnDownloadVideo.href = `/api/proxy?url=${encodeURIComponent(video_url)}&title=${encodeURIComponent(cleanFileName)}`;
           btnDownloadVideo.download = `${cleanFileName}.mp4`;
-          btnDownloadVideo.innerHTML = `⬇️ Download Video HD (No Watermark)`;
+          btnDownloadVideo.innerHTML = `⬇️ Download Video Kualitas Terbaik (${quality || '1280p'})`;
 
           // Render opsi resolusi lain jika tersedia
           let qualityContainer = document.getElementById('qualityContainer');

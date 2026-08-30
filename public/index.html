@@ -87,7 +87,9 @@
         <!-- Result Box -->
         <div id="resultCard" class="result-card">
           <div class="result-grid">
-            <video id="videoPreview" class="video-preview" controls></video>
+            <div class="video-container">
+              <video id="videoPreview" class="video-preview" controls playsinline webkit-playsinline preload="metadata"></video>
+            </div>
             <div class="result-info">
               <h3 id="videoTitle">Judul Shopee Video</h3>
               <p id="videoAuthor">Oleh: Kreator Shopee</p>
