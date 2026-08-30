@@ -198,11 +198,29 @@ app.get('/api/download', async (req, res) => {
 });
 
 /**
- * Proxy Stream Endpoint: Menyalurkan video langsung ke user (Bypass CORS & Force Download)
+ * Helper untuk membersihkan judul agar aman menjadi nama file
+ */
+function sanitizeFilename(name) {
+  if (!name) return 'Shopee_Video_NoWatermark';
+  // Hapus karakter terlarang untuk nama file di OS (Windows/Linux/Mac)
+  let clean = name.replace(/[<>:"/\\|?*#\x00-\x1F]/g, '').trim();
+  // Ganti spasi berlebih atau newline
+  clean = clean.replace(/\s+/g, '_');
+  // Batasi panjang nama file maksimal 80 karakter
+  if (clean.length > 80) {
+    clean = clean.substring(0, 80);
+  }
+  return clean || 'Shopee_Video_NoWatermark';
+}
+
+/**
+ * Proxy Stream Endpoint: Menyalurkan video langsung ke user (Bypass CORS & Force Download dengan nama sesuai judul)
  */
 app.get('/api/proxy', async (req, res) => {
   try {
     const videoUrl = req.query.url;
+    const rawTitle = req.query.title || 'Shopee_Video_NoWatermark';
+    
     if (!videoUrl) return res.status(400).send('URL video tidak ditemukan');
 
     const response = await axios({
@@ -216,8 +234,12 @@ app.get('/api/proxy', async (req, res) => {
       }
     });
 
+    const safeTitle = sanitizeFilename(rawTitle);
+    const filename = `${safeTitle}.mp4`;
+
     res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', 'attachment; filename="ShopeeVideo_NoWatermark.mp4"');
+    // Set filename standar dan RFC 5987 encode untuk karakter UTF-8 / Emoji
+    res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mp4"; filename*=UTF-8''${encodeURIComponent(filename)}`);
 
     if (response.headers['content-length']) {
       res.setHeader('Content-Length', response.headers['content-length']);

@@ -53,8 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
           videoAuthor.textContent = `Kreator: @${author || 'Shopee User'}${no_watermark ? ' • ✅ Tanpa Watermark (HD)' : ''}`;
           videoPreview.src = `/api/proxy?url=${encodeURIComponent(video_url)}`;
 
+          const rawVideoTitle = title || 'Shopee_Video_NoWatermark';
+          const cleanFileName = rawVideoTitle.replace(/[<>:"/\\|?*#]/g, '').trim().replace(/\s+/g, '_').substring(0, 80);
+
           // Tombol Download Utama
-          btnDownloadVideo.href = `/api/proxy?url=${encodeURIComponent(video_url)}`;
+          btnDownloadVideo.href = `/api/proxy?url=${encodeURIComponent(video_url)}&title=${encodeURIComponent(cleanFileName)}`;
+          btnDownloadVideo.download = `${cleanFileName}.mp4`;
           btnDownloadVideo.innerHTML = `⬇️ Download Video HD (No Watermark)`;
 
           // Render opsi resolusi lain jika tersedia
@@ -78,8 +82,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnQ.className = 'btn-secondary';
                 btnQ.style.fontSize = '0.85rem';
                 btnQ.style.padding = '6px 12px';
-                btnQ.href = `/api/proxy?url=${encodeURIComponent(item.stream)}`;
-                btnQ.download = `Shopee_${q}_NoWatermark.mp4`;
+                btnQ.href = `/api/proxy?url=${encodeURIComponent(item.stream)}&title=${encodeURIComponent(`${cleanFileName}_${q}`)}`;
+                btnQ.download = `${cleanFileName}_${q}.mp4`;
                 btnQ.textContent = `📥 ${q} (${item.codec || 'MP4'})`;
                 qualityContainer.appendChild(btnQ);
               }
