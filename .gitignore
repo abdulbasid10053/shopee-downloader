@@ -1,0 +1,7 @@
+node_modules
+.env
+*.log
+svxtract_sample.mp4
+test_*.js
+test_output.mp4
+test_nowm.mp4

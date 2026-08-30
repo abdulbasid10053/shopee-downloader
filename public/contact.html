@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hubungi Kami - Shopee Saver</title>
+  <meta name="robots" content="index, follow">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <header>
+    <div class="container nav-container">
+      <a href="/" class="logo"><span>Shopee</span>Saver</a>
+      <ul class="nav-links">
+        <li><a href="/">Beranda</a></li>
+        <li><a href="/#fitur">Keunggulan</a></li>
+        <li><a href="/#faq">FAQ</a></li>
+        <li><a href="/contact.html">Kontak</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 50px; padding-bottom: 80px;">
+    <div class="article-content" style="max-width: 760px; margin: 0 auto;">
+      <h1>Hubungi Kami</h1>
+      <p>Punya pertanyaan, kendala teknis, atau saran untuk pengembangan ShopeeSaver? Tim kami siap mendengar masukan dari Anda.</p>
+
+      <form style="margin-top: 24px; display: flex; flex-direction: column; gap: 16px;" onsubmit="event.preventDefault(); alert('Pesan Anda berhasil terkirim! Terima kasih.'); this.reset();">
+        <div>
+          <label style="display:block; margin-bottom:6px; font-weight:500;">Nama Lengkap</label>
+          <input type="text" required style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:rgba(15,23,42,0.6); color:#fff;">
+        </div>
+
+        <div>
+          <label style="display:block; margin-bottom:6px; font-weight:500;">Alamat Email</label>
+          <input type="email" required style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:rgba(15,23,42,0.6); color:#fff;">
+        </div>
+
+        <div>
+          <label style="display:block; margin-bottom:6px; font-weight:500;">Pesan Anda</label>
+          <textarea rows="5" required style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:rgba(15,23,42,0.6); color:#fff;"></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary" style="padding: 14px; justify-content: center;">Kirim Pesan</button>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-bottom">
+        <p>&copy; 2026 ShopeeSaver. All Rights Reserved. <a href="/" style="color:var(--primary);">Kembali ke Beranda</a></p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
