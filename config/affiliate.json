@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "affiliate_id": "an_11369380175",
+  "default_affiliate_link": "https://s.shopee.co.id/4LKJ4ZwW7u",
+  "collection_link": "https://s.shopee.co.id/",
+  "dynamic_product_search": true,
+  "open_api": {
+    "app_id": "",
+    "secret": ""
+  }
+}

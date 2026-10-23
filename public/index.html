@@ -55,6 +55,7 @@
       </a>
       <ul class="nav-links">
         <li><a href="/">Beranda</a></li>
+        <li><a href="#koleksi-video">Koleksi Video</a></li>
         <li><a href="#fitur">Keunggulan</a></li>
         <li><a href="#cara-download">Cara Download</a></li>
         <li><a href="#faq">FAQ</a></li>
@@ -88,19 +89,74 @@
         <div id="resultCard" class="result-card">
           <div class="result-grid">
             <div class="video-container">
-              <video id="videoPreview" class="video-preview" controls playsinline webkit-playsinline preload="metadata"></video>
+              <div id="videoPosterWrapper" class="video-poster-wrapper">
+                <img id="videoCoverImg" src="" alt="Thumbnail Video" class="video-poster-img">
+                <div class="play-overlay">
+                  <button type="button" id="btnPlayPreview" class="play-btn-circle" aria-label="Putar Pratinjau Video">
+                    <svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                  <span class="preview-hint">Klik untuk putar pratinjau</span>
+                </div>
+                <div id="videoDurationBadge" class="duration-badge">0:00</div>
+              </div>
+              <video id="videoPreview" class="video-preview" controls playsinline webkit-playsinline preload="none" style="display: none;"></video>
             </div>
+
             <div class="result-info">
+              <div class="result-badges">
+                <span id="badgeNoWatermark" class="badge badge-success">✨ Tanpa Watermark</span>
+                <span id="badgeQuality" class="badge badge-primary">HD 1080p</span>
+              </div>
               <h3 id="videoTitle">Judul Shopee Video</h3>
               <p id="videoAuthor">Oleh: Kreator Shopee</p>
+
+              <!-- Pemilih Kualitas Unduhan (HD vs SD) -->
+              <div class="quality-selector-wrap">
+                <label class="quality-title">Pilih Kualitas Unduhan:</label>
+                <div id="qualityOptions" class="quality-options">
+                  <!-- Dimasukkan via JavaScript -->
+                </div>
+              </div>
+
               <div class="action-buttons">
-                <a id="btnDownloadVideo" href="#" class="btn-primary" download>⬇️ Download Video Shopee</a>
-                <button id="btnCopyLink" class="btn-secondary">🔗 Salin Link</button>
+                <a id="btnDownloadVideo" href="#" class="btn-primary" download>⬇️ Download Video HD</a>
+              </div>
+
+              <!-- Rekomendasi Produk Terkait (Shopee Affiliate) -->
+              <div id="productAffiliateCard" class="product-affiliate-card" style="display: none;">
+                <div class="product-affiliate-header">
+                  <span class="product-tag-icon">🛍️</span>
+                  <div class="product-meta">
+                    <span class="product-label">Produk Terkait di Video Ini</span>
+                    <h4 id="productTitle">Nama Produk</h4>
+                  </div>
+                </div>
+                <a id="btnBuyProduct" href="#" target="_blank" rel="noopener noreferrer nofollow" class="btn-shopee-affiliate">
+                  <span>Cek Produk di Shopee</span>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                    <polyline points="15 3 21 3 21 9"></polyline>
+                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                  </svg>
+                </a>
               </div>
             </div>
           </div>
         </div>
 
+      </div>
+    </section>
+
+    <!-- Koleksi Video Viral Populer (Video Library) -->
+    <section id="koleksi-video" class="section library-section">
+      <div class="section-title-wrap">
+        <h2 class="section-title">🔥 Koleksi Video Viral Populer</h2>
+        <p class="section-subtitle">Kumpulan video Shopee yang baru saja diunduh beserta rekomendasi produk aslinya</p>
+      </div>
+      <div id="libraryContainer" class="library-grid">
+        <!-- Render otomatis via library API -->
       </div>
     </section>
 

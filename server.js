@@ -3,6 +3,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,22 +12,332 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+const AFFILIATE_CONFIG_PATH = path.join(__dirname, 'config', 'affiliate.json');
+const LIBRARY_DATA_PATH = path.join(__dirname, 'data', 'library.json');
+
+function getAffiliateConfig() {
+  try {
+    if (fs.existsSync(AFFILIATE_CONFIG_PATH)) {
+      return JSON.parse(fs.readFileSync(AFFILIATE_CONFIG_PATH, 'utf-8'));
+    }
+  } catch (e) {
+    console.warn('[CONFIG WARN] Error reading affiliate.json:', e.message);
+  }
+  return { enabled: true, default_affiliate_link: 'https://s.shopee.co.id/' };
+}
+
+function extractProductInfo(caption, rawTitle) {
+  const text = (caption || rawTitle || '').trim();
+  
+  // 1. Coba ambil teks non-hashtag terlebih dahulu
+  let cleanName = text
+    .replace(/#ShopeeCOD|#RacunShopee|#ShopeeLook|#DiskonShopee|#ShopeeHaul|#PromoShopee|#ViralDiShopeeVideo|#SpillBawaBerkah|#Diskon\d+Persen|#BadaiTapiBudget/gi, '')
+    .replace(/#[a-zA-Z0-9_]+/g, '')
+    .replace(/[<>:"/\\|?*#\x00-\x1F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // 2. Jika teks kosong (karena caption hanya berisi hashtag), ambil kata kunci dari hashtag produk
+  if (!cleanName || cleanName.length < 3) {
+    const tags = (text.match(/#[a-zA-Z0-9_]+/g) || [])
+      .map(t => t.replace(/^#/, ''))
+      .filter(t => !/^(Shopee|RacunShopee|Viral|Spill|Diskon|Promo|Badai|FYP)/i.test(t));
+    
+    if (tags.length > 0) {
+      cleanName = tags.slice(0, 3).join(' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/_/g, ' ');
+    }
+  }
+
+  if (!cleanName || cleanName.length < 3) {
+    cleanName = 'Produk Rekomendasi Shopee';
+  }
+
+  // Batasi panjang nama produk
+  if (cleanName.length > 60) {
+    cleanName = cleanName.substring(0, 60).trim();
+  }
+
+  const keyword = cleanName.toLowerCase();
+  const config = getAffiliateConfig();
+  const affId = config.affiliate_id || 'an_11369380175';
+
+  // Link pencarian dinamis Shopee sesuai dengan produk di video + ID Affiliate
+  const dynamicAffiliateUrl = `https://shopee.co.id/search?keyword=${encodeURIComponent(cleanName)}&utm_source=${affId}&utm_medium=affiliates`;
+  const affiliateUrl = config.dynamic_product_search !== false ? dynamicAffiliateUrl : (config.default_affiliate_link || dynamicAffiliateUrl);
+
+  return {
+    name: cleanName,
+    keyword: keyword,
+    search_url: `https://shopee.co.id/search?keyword=${encodeURIComponent(cleanName)}`,
+    affiliate_url: affiliateUrl
+  };
+}
+
+function saveToLibrary(videoData) {
+  try {
+    let list = [];
+    if (fs.existsSync(LIBRARY_DATA_PATH)) {
+      list = JSON.parse(fs.readFileSync(LIBRARY_DATA_PATH, 'utf-8') || '[]');
+    }
+
+    const videoId = videoData.id || `vid-${Date.now()}`;
+    const productInfo = videoData.product || extractProductInfo(videoData.title, videoData.title);
+
+    const existingIndex = list.findIndex(item => item.id === videoId || item.video_url === videoData.video_url || item.title === videoData.title);
+
+    if (existingIndex !== -1) {
+      list[existingIndex].download_count = (list[existingIndex].download_count || 1) + 1;
+      list[existingIndex].last_downloaded = new Date().toISOString();
+    } else {
+      const newItem = {
+        id: videoId,
+        title: videoData.title,
+        author: videoData.author,
+        cover: videoData.cover,
+        video_url: videoData.video_url,
+        duration: videoData.duration || 0,
+        quality: videoData.quality || 'HD 1080p',
+        download_count: 1,
+        created_at: new Date().toISOString(),
+        product: productInfo
+      };
+      list.unshift(newItem);
+      if (list.length > 100) {
+        list = list.slice(0, 100);
+      }
+    }
+
+    fs.writeFileSync(LIBRARY_DATA_PATH, JSON.stringify(list, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('[LIBRARY WARN] Gagal menyimpan ke library:', err.message);
+  }
+}
+
+const DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
+
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+  'User-Agent': DESKTOP_UA,
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'Accept-Language': 'id-ID,id;q=0.9,en-US;q=0.8',
   'Referer': 'https://shopee.co.id/'
 };
 
 /**
- * Engine 1: Mengambil video clean langsung tanpa watermark via high-speed API (0 CPU load di VPS)
+ * Helper: Menyelesaikan URL pendek (id.shp.ee, s.shopee.co.id, universal-link, dsb.) dan redirect Shopee
+ */
+async function resolveShopeeUrl(inputUrl) {
+  let resolvedUrl = inputUrl;
+  let finalHtml = '';
+
+  try {
+    const resp1 = await axios.get(inputUrl, {
+      headers: HEADERS,
+      maxRedirects: 10,
+      validateStatus: status => status >= 200 && status < 400
+    });
+    resolvedUrl = resp1.request?.res?.responseUrl || resp1.config.url || inputUrl;
+    finalHtml = typeof resp1.data === 'string' ? resp1.data : '';
+  } catch (e) {
+    console.warn('[RESOLVE WARN] Redirect error:', e.message);
+  }
+
+  // Cek jika terdapat parameter 'redir' di query string (misal universal-link Shopee)
+  try {
+    const parsed = new URL(resolvedUrl);
+    const redir = parsed.searchParams.get('redir');
+    if (redir) {
+      resolvedUrl = decodeURIComponent(redir);
+      const resp2 = await axios.get(resolvedUrl, { headers: HEADERS, maxRedirects: 10 });
+      resolvedUrl = resp2.request?.res?.responseUrl || resolvedUrl;
+      finalHtml = typeof resp2.data === 'string' ? resp2.data : finalHtml;
+    }
+  } catch (e) {}
+
+  return { resolvedUrl, html: finalHtml };
+}
+
+/**
+ * Engine 1 (Utama): Ekstraksi Bersih Langsung dari Shopee (Direct Native Engine - No Watermark)
+ * Mengambil file master langsung dari CDN Shopee tanpa watermark dan tanpa ketergantungan pihak ketiga.
+ */
+async function fetchDirectShopeeVideo(inputUrl) {
+  const { resolvedUrl, html: initialHtml } = await resolveShopeeUrl(inputUrl);
+  console.log('[DIRECT ENGINE] Target URL resolved:', resolvedUrl);
+
+  let targetUrl = resolvedUrl;
+  let finalHtml = initialHtml;
+
+  // Jika HTML awal belum memiliki __NEXT_DATA__, lakukan fetch langsung ke targetUrl
+  if (!finalHtml || !finalHtml.includes('__NEXT_DATA__')) {
+    const resp = await axios.get(targetUrl, {
+      headers: HEADERS
+    });
+    finalHtml = resp.data;
+  }
+
+  const $ = cheerio.load(finalHtml);
+  const nextDataEl = $('script#__NEXT_DATA__').html();
+  if (!nextDataEl) {
+    throw new Error('Halaman Shopee tidak memiliki data video');
+  }
+
+  const nextData = JSON.parse(nextDataEl);
+  const mediaInfo = nextData?.props?.pageProps?.mediaInfo;
+  if (!mediaInfo || !mediaInfo.video) {
+    throw new Error('Data video Shopee tidak ditemukan pada halaman ini');
+  }
+
+  const video = mediaInfo.video;
+  const userInfo = mediaInfo.userInfo || {};
+
+  let title = 'Shopee Video';
+  if (video.caption) {
+    title = video.caption.split('#')[0].trim() || video.caption.trim();
+  }
+
+  const author = userInfo.videoUserName || 'Kreator Shopee';
+  const coverUrl = video.watermarkCoverUrl || '';
+  const watermarkUrl = video.watermarkVideoUrl || '';
+  const durationSec = Math.round((video.duration || 0) / 1000);
+
+  // Deteksi domain negara (co.id, sg, vn, ph, my, dll.)
+  let domain = 'co.id';
+  try {
+    const host = new URL(targetUrl).hostname;
+    const parts = host.split('.');
+    if (parts.length >= 2) {
+      domain = parts.slice(-2).join('.');
+      if (['shopee.vn', 'shopee.sg', 'shopee.ph', 'shopee.my'].includes(domain)) {
+        domain = parts.slice(-1)[0];
+      }
+    }
+  } catch (e) {}
+
+  let cleanVideoUrl = null;
+  // Pola media ID Shopee: /mms/(id-xxx)
+  const m = watermarkUrl.match(/\/mms\/(id-[a-zA-Z0-9_-]+)/);
+  if (m) {
+    const fileId = m[1];
+    cleanVideoUrl = `https://cv.shopee.${domain}/api/v4/11110124/mms/${fileId}.mp4`;
+  } else if (watermarkUrl) {
+    cleanVideoUrl = watermarkUrl.replace(/\.\d+\.\d+\.mp4$/, '.mp4');
+  }
+
+  // Verifikasi ketersediaan link clean master tanpa watermark dengan HEAD request
+  let verifiedUrl = null;
+  let fileSizeMB = null;
+  if (cleanVideoUrl) {
+    try {
+      const headCheck = await axios.head(cleanVideoUrl, {
+        headers: { 'User-Agent': DESKTOP_UA, 'Referer': 'https://shopee.co.id/' },
+        timeout: 6000
+      });
+      if (headCheck.status === 200) {
+        verifiedUrl = cleanVideoUrl;
+        const bytes = parseInt(headCheck.headers['content-length'] || '0', 10);
+        if (bytes > 0) {
+          fileSizeMB = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+      }
+    } catch (e) {
+      console.warn('[DIRECT ENGINE] Clean URL verification warning:', e.message);
+    }
+  }
+
+  // Cek ukuran berkas SD terkompresi
+  let sdSizeMB = null;
+  if (watermarkUrl) {
+    try {
+      const sdHead = await axios.head(watermarkUrl, {
+        headers: { 'User-Agent': DESKTOP_UA, 'Referer': 'https://shopee.co.id/' },
+        timeout: 4000
+      });
+      if (sdHead.status === 200) {
+        const bytes = parseInt(sdHead.headers['content-length'] || '0', 10);
+        if (bytes > 0) {
+          sdSizeMB = (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+      }
+    } catch (e) {}
+  }
+
+  const finalVideoUrl = verifiedUrl || watermarkUrl;
+  const isNoWatermark = !!verifiedUrl;
+
+  // Siapkan seluruh opsi unduhan (HD, SD, Audio MP3, Cover HD)
+  const streams = {};
+  if (verifiedUrl) {
+    streams['HD 1080p (No Watermark)'] = {
+      label: 'HD 1080p (Tanpa Watermark)',
+      url: verifiedUrl,
+      quality: 'HD 1080p',
+      type: 'video',
+      size: fileSizeMB || '',
+      no_watermark: true
+    };
+  }
+  if (watermarkUrl) {
+    streams['SD Standard'] = {
+      label: 'Kualitas Standar (SD)',
+      url: watermarkUrl,
+      quality: 'SD (Standar)',
+      type: 'video',
+      size: sdSizeMB || '',
+      no_watermark: false
+    };
+  }
+  // Opsi Audio / Musik Saja
+  if (finalVideoUrl) {
+    streams['Audio MP3'] = {
+      label: 'Audio / Musik Saja (MP3)',
+      url: watermarkUrl || finalVideoUrl,
+      quality: 'Audio MP3',
+      type: 'audio',
+      size: sdSizeMB ? `~${sdSizeMB}` : '',
+      no_watermark: true
+    };
+  }
+  // Opsi Cover Thumbnail HD
+  if (coverUrl) {
+    streams['Cover HD'] = {
+      label: 'Cover / Thumbnail HD',
+      url: coverUrl,
+      quality: 'Gambar HD',
+      type: 'image',
+      size: 'JPG HD',
+      no_watermark: true
+    };
+  }
+
+  const productInfo = extractProductInfo(video.caption, title);
+
+  return {
+    id: m ? m[1] : `vid-${Date.now()}`,
+    title,
+    author,
+    cover: coverUrl,
+    duration: durationSec,
+    video_url: finalVideoUrl,
+    preview_url: finalVideoUrl,
+    quality: isNoWatermark ? 'HD 1080p (No Watermark)' : 'Standard',
+    no_watermark: isNoWatermark,
+    size: fileSizeMB || '',
+    product: productInfo,
+    streams
+  };
+}
+
+/**
+ * Engine 2 (Secondary Fallback): Mengambil video via Svxtract API
  */
 async function fetchCleanShopeeVideo(shopeeUrl) {
   const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
   
-  // 1. Ambil session cookie & CSRF token
   const homeResp = await axios.get('https://svxtract.com/', {
-    headers: { 'User-Agent': ua }
+    headers: { 'User-Agent': ua },
+    timeout: 5000
   });
   
   const cookies = (homeResp.headers['set-cookie'] || []).map(c => c.split(';')[0]).join('; ');
@@ -38,7 +349,6 @@ async function fetchCleanShopeeVideo(shopeeUrl) {
     throw new Error('Gagal mendapatkan token extractor');
   }
 
-  // 2. Request ke API
   const apiUrl = `https://svxtract.com/apiv3.php?url=${encodeURIComponent(shopeeUrl)}&csrf_token=${encodeURIComponent(csrf)}`;
   const apiResp = await axios.get(apiUrl, {
     headers: {
@@ -46,7 +356,8 @@ async function fetchCleanShopeeVideo(shopeeUrl) {
       'Referer': 'https://svxtract.com/',
       'Accept': 'application/json',
       'Cookie': cookies
-    }
+    },
+    timeout: 8000
   });
 
   const data = apiResp.data;
@@ -54,7 +365,6 @@ async function fetchCleanShopeeVideo(shopeeUrl) {
     throw new Error(data?.error || 'Gagal mengekstrak video');
   }
 
-  // 1. Download URL: Tetap prioritaskan KUALITAS TERTINGGI (1280p / 960p / 720p)
   let bestDownloadUrl = null;
   let downloadQuality = '1280p';
   const maxQualities = ['1280p', '960p', '720P', '640p', '540P', '360P'];
@@ -68,7 +378,6 @@ async function fetchCleanShopeeVideo(shopeeUrl) {
     }
   }
 
-  // 2. Preview URL: Khusus web player iOS Safari (prioritaskan codec H264 960p/720p agar pasti bisa diplay)
   let previewUrl = null;
   if (data.stream) {
     const h264Qualities = ['960p', '720P', '540P', '360P', '1280p', '640p'];
@@ -86,59 +395,15 @@ async function fetchCleanShopeeVideo(shopeeUrl) {
   if (!previewUrl) previewUrl = bestDownloadUrl;
 
   return {
-    username: data.username || 'Kreator Shopee',
-    streamUrl: bestDownloadUrl,     // Untuk tombol Download Utama (1280p kualitas tertinggi)
-    previewUrl: previewUrl,         // Untuk Video Preview Player (H.264 lancar di iOS)
+    title: `Shopee Video @${data.username || 'Kreator Shopee'}`,
+    author: data.username || 'Kreator Shopee',
+    cover: '',
+    video_url: bestDownloadUrl,
+    preview_url: previewUrl,
     quality: downloadQuality,
-    streams: data.stream || {}
+    streams: data.stream || {},
+    no_watermark: true
   };
-}
-
-/**
- * Engine 2: Fallback Scraper Shopee Langsung (jika Engine 1 kendala)
- */
-async function fallbackShopeeScraper(inputUrl) {
-  let resolvedUrl = inputUrl;
-  try {
-    const resp1 = await axios.get(inputUrl, { headers: HEADERS, maxRedirects: 10 });
-    if (resp1.request?.res?.responseUrl) {
-      resolvedUrl = resp1.request.res.responseUrl;
-    }
-  } catch (e) {}
-
-  let targetUrl = resolvedUrl;
-  try {
-    const parsed = new URL(resolvedUrl);
-    const redir = parsed.searchParams.get('redir');
-    if (redir) targetUrl = decodeURIComponent(redir);
-  } catch (e) {}
-
-  const resp = await axios.get(targetUrl, { headers: { ...HEADERS, 'Referer': 'https://shopee.co.id/' } });
-  const html = resp.data;
-  const $ = cheerio.load(html);
-
-  let videoUrl = null;
-  let title = 'Shopee Video';
-  let author = 'Kreator Shopee';
-  let coverUrl = '';
-
-  const nextDataEl = $('script#__NEXT_DATA__').html();
-  if (nextDataEl) {
-    try {
-      const nextData = JSON.parse(nextDataEl);
-      const mediaInfo = nextData?.props?.pageProps?.mediaInfo;
-      if (mediaInfo) {
-        const video = mediaInfo.video;
-        const userInfo = mediaInfo.userInfo;
-        if (video?.watermarkVideoUrl) videoUrl = video.watermarkVideoUrl;
-        if (video?.caption) title = video.caption.split('#')[0].trim() || title;
-        if (userInfo?.videoUserName) author = userInfo.videoUserName;
-        if (video?.watermarkCoverUrl) coverUrl = `${video.watermarkCoverUrl}@resize_l500`;
-      }
-    } catch (e) {}
-  }
-
-  return { videoUrl, title, author, coverUrl };
 }
 
 /**
@@ -158,48 +423,39 @@ app.get('/api/download', async (req, res) => {
 
     console.log('[REQUEST] Input URL:', inputUrl);
 
-    // 1. Coba Engine 1 (Clean No Watermark HD)
+    // 1. Prioritas Utama: Engine Direct Native (Bersih 100% No Watermark & Anti-Block)
     try {
-      const cleanData = await fetchCleanShopeeVideo(inputUrl);
-      if (cleanData && cleanData.streamUrl) {
-        console.log('[SUCCESS ENGINE 1] Clean Video URL diperoleh (No Watermark):', cleanData.quality);
+      const directData = await fetchDirectShopeeVideo(inputUrl);
+      if (directData && directData.video_url) {
+        console.log('[SUCCESS DIRECT ENGINE] Video Clean diperoleh:', directData.quality);
+        saveToLibrary(directData);
         return res.json({
           status: true,
-          data: {
-            title: `Shopee Video @${cleanData.username}`,
-            author: cleanData.username,
-            cover: '',
-            video_url: cleanData.streamUrl,
-            preview_url: cleanData.previewUrl,
-            quality: cleanData.quality,
-            streams: cleanData.streams,
-            no_watermark: true
-          }
+          data: directData
         });
       }
-    } catch (engine1Err) {
-      console.warn('[WARN] Engine 1 fallback trigger:', engine1Err.message);
+    } catch (directErr) {
+      console.warn('[WARN] Direct Engine fallback trigger:', directErr.message);
     }
 
-    // 2. Fallback Engine 2
-    const fallbackData = await fallbackShopeeScraper(inputUrl);
-    if (!fallbackData.videoUrl) {
-      return res.status(404).json({
-        status: false,
-        message: 'Gagal menemukan URL video. Pastikan link yang Anda masukkan adalah tautan Shopee Video yang valid.'
-      });
-    }
-
-    return res.json({
-      status: true,
-      data: {
-        title: fallbackData.title,
-        author: fallbackData.author,
-        cover: fallbackData.coverUrl,
-        video_url: fallbackData.videoUrl,
-        quality: 'Standard',
-        no_watermark: false
+    // 2. Fallback: Engine Svxtract (jika Direct gagal)
+    try {
+      const cleanData = await fetchCleanShopeeVideo(inputUrl);
+      if (cleanData && cleanData.video_url) {
+        console.log('[SUCCESS ENGINE SVXTRACT] Clean Video diperoleh:', cleanData.quality);
+        saveToLibrary(cleanData);
+        return res.json({
+          status: true,
+          data: cleanData
+        });
       }
+    } catch (engineErr) {
+      console.warn('[WARN] Svxtract fallback trigger:', engineErr.message);
+    }
+
+    return res.status(404).json({
+      status: false,
+      message: 'Gagal menemukan URL video. Pastikan link yang Anda masukkan adalah tautan Shopee Video yang valid.'
     });
 
   } catch (error) {
@@ -212,15 +468,32 @@ app.get('/api/download', async (req, res) => {
 });
 
 /**
+ * Endpoint Video Library: /api/library
+ */
+app.get('/api/library', (req, res) => {
+  try {
+    let list = [];
+    if (fs.existsSync(LIBRARY_DATA_PATH)) {
+      list = JSON.parse(fs.readFileSync(LIBRARY_DATA_PATH, 'utf-8') || '[]');
+    }
+    const limit = parseInt(req.query.limit || '24', 10);
+    return res.json({
+      status: true,
+      total: list.length,
+      data: list.slice(0, limit)
+    });
+  } catch (err) {
+    return res.status(500).json({ status: false, message: 'Gagal memuat library video.' });
+  }
+});
+
+/**
  * Helper untuk membersihkan judul agar aman menjadi nama file
  */
 function sanitizeFilename(name) {
   if (!name) return 'Shopee_Video_NoWatermark';
-  // Hapus karakter terlarang untuk nama file di OS (Windows/Linux/Mac)
   let clean = name.replace(/[<>:"/\\|?*#\x00-\x1F]/g, '').trim();
-  // Ganti spasi berlebih atau newline
   clean = clean.replace(/\s+/g, '_');
-  // Batasi panjang nama file maksimal 80 karakter
   if (clean.length > 80) {
     clean = clean.substring(0, 80);
   }
@@ -228,33 +501,64 @@ function sanitizeFilename(name) {
 }
 
 /**
- * Proxy Stream Endpoint: Menyalurkan video langsung ke user (Bypass CORS & Force Download dengan nama sesuai judul)
+ * Proxy Stream Endpoint: Menyalurkan video langsung ke user (Bypass CORS, support Range Streaming, dan Force Download)
  */
 app.get('/api/proxy', async (req, res) => {
   try {
     const videoUrl = req.query.url;
-    const rawTitle = req.query.title || 'Shopee_Video_NoWatermark';
+    const rawTitle = req.query.title || '';
     
     if (!videoUrl) return res.status(400).send('URL video tidak ditemukan');
+
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36',
+      'Referer': 'https://shopee.co.id/',
+      'Accept': '*/*'
+    };
+
+    // Teruskan Range header untuk kelancaran preview iOS Safari & streaming video
+    if (req.headers.range) {
+      headers['Range'] = req.headers.range;
+    }
 
     const response = await axios({
       method: 'get',
       url: videoUrl,
       responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/126.0.0.0 Safari/537.36',
-        'Referer': videoUrl.includes('svxtract.com') ? 'https://svxtract.com/' : 'https://sv.shopee.co.id/',
-        'Accept': '*/*'
-      }
+      headers: headers,
+      validateStatus: (status) => status >= 200 && status < 400
     });
 
+    const fileType = req.query.type || 'video';
+    let ext = '.mp4';
+    let mimeType = response.headers['content-type'] || 'video/mp4';
+
+    if (fileType === 'audio') {
+      ext = '.mp3';
+      mimeType = 'audio/mpeg';
+    } else if (fileType === 'image') {
+      ext = '.jpg';
+      mimeType = response.headers['content-type'] || 'image/jpeg';
+    }
+
     const safeTitle = sanitizeFilename(rawTitle);
-    const filename = `${safeTitle}.mp4`;
+    const filename = `${safeTitle}${ext}`;
 
-    res.setHeader('Content-Type', 'video/mp4');
-    // Set filename standar dan RFC 5987 encode untuk karakter UTF-8 / Emoji
-    res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.mp4"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    res.status(response.status);
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Accept-Ranges', 'bytes');
 
+    // Jika parameter title ada (tombol download ditekan), jadikan file download (attachment)
+    // Jika tidak ada title (video player preview), tampilkan inline
+    if (rawTitle) {
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"; filename*=UTF-8''${encodeURIComponent(filename)}`);
+    } else {
+      res.setHeader('Content-Disposition', 'inline');
+    }
+
+    if (response.headers['content-range']) {
+      res.setHeader('Content-Range', response.headers['content-range']);
+    }
     if (response.headers['content-length']) {
       res.setHeader('Content-Length', response.headers['content-length']);
     }
