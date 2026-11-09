@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kebijakan Privasi - Shopee Saver</title>
+  <title>Kebijakan Privasi - VidSaver For Shopee Video</title>
+  <meta name="description" content="Kebijakan Privasi aplikasi VidSaver For Shopee Video. Pelajari bagaimana kami menangani data dan privasi pengguna.">
   <meta name="robots" content="index, follow">
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="shortcut icon" href="/favicon.ico">
@@ -12,6 +13,207 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .policy-hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+    }
+    .policy-hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      font-weight: 800;
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+    .policy-hero h1 span {
+      color: var(--primary);
+    }
+    .policy-hero .last-updated {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 87, 34, 0.12);
+      border: 1px solid rgba(255, 87, 34, 0.25);
+      color: var(--primary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-top: 10px;
+    }
+    .policy-toc {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 24px 28px;
+      margin-bottom: 36px;
+    }
+    .policy-toc h3 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+    .policy-toc ol {
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .policy-toc ol li a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.93rem;
+      transition: color 0.2s;
+    }
+    .policy-toc ol li a:hover {
+      color: var(--primary);
+    }
+    .policy-body {
+      max-width: 800px;
+      margin: 0 auto;
+      padding-bottom: 80px;
+    }
+    .policy-section {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      margin-bottom: 24px;
+      scroll-margin-top: 90px;
+    }
+    .policy-section-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    .policy-section-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: rgba(255, 87, 34, 0.15);
+      border: 1px solid rgba(255, 87, 34, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .policy-section h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+    }
+    .policy-section p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.75;
+      margin-bottom: 12px;
+    }
+    .policy-section p:last-child {
+      margin-bottom: 0;
+    }
+    .policy-section ul {
+      list-style: none;
+      padding: 0;
+      margin: 12px 0 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .policy-section ul li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.65;
+    }
+    .policy-section ul li::before {
+      content: '→';
+      color: var(--primary);
+      font-weight: 700;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+    .policy-section strong {
+      color: var(--text-main);
+    }
+    .info-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: #a5b4fc;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .warning-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 87, 34, 0.1);
+      border: 1px solid rgba(255, 87, 34, 0.25);
+      color: var(--primary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+    .contact-card {
+      background: linear-gradient(135deg, rgba(255, 87, 34, 0.12) 0%, rgba(99, 102, 241, 0.12) 100%);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      text-align: center;
+    }
+    .contact-card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .contact-card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 20px;
+    }
+    .contact-card a.email-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 12px 24px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+    .contact-card a.email-link:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 20px var(--primary-glow);
+      transform: translateY(-1px);
+    }
+    @media (max-width: 600px) {
+      .policy-section {
+        padding: 24px 20px;
+      }
+      .contact-card {
+        padding: 24px 20px;
+      }
+      .policy-toc {
+        padding: 20px;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -28,34 +230,161 @@
     </div>
   </header>
 
-  <main class="container" style="padding-top: 50px; padding-bottom: 80px;">
-    <div class="article-content" style="max-width: 800px; margin: 0 auto;">
-      <h1>Kebijakan Privasi (Privacy Policy)</h1>
-      <p>Terakhir diperbarui: 31 Agustus 2026</p>
-      
-      <p>Di <strong>ShopeeSaver</strong>, privasi pengunjung kami adalah salah satu prioritas utama kami. Dokumen Kebijakan Privasi ini berisi jenis informasi yang dikumpulkan dan dicatat oleh ShopeeSaver dan bagaimana kami menggunakannya.</p>
+  <main class="container">
 
-      <h2>1. Informasi yang Kami Kumpulkan</h2>
-      <p>ShopeeSaver adalah layanan web gratis. Kami tidak mewajibkan registrasi atau pembuatan akun. Kami tidak menyimpan URL video Shopee yang Anda masukkan atau file MP4 yang Anda unduh di server permanen kami.</p>
-
-      <h2>2. Log Files</h2>
-      <p>Seperti kebanyakan situs web lainnya, ShopeeSaver menggunakan berkas log standar web server untuk keperluan pemeliharaan sistem, analisis tren, dan keamanan server.</p>
-
-      <h2>3. Cookie dan Web Beacons</h2>
-      <p>Situs kami dapat menggunakan cookie untuk meningkatkan pengalaman pengguna (misalnya mengingat preferensi bahasa atau tema antarmuka).</p>
-
-      <h2>4. Hak Cipta & Pihak Ketiga</h2>
-      <p>ShopeeSaver tidak terafiliasi, didukung, atau bekerja sama secara resmi dengan Shopee Inc. Semua nama merek, logo, dan hak cipta media adalah milik dari pemiliknya masing-masing.</p>
-
-      <h2>5. Persetujuan</h2>
-      <p>Dengan menggunakan situs web kami, Anda dengan ini menyetujui Kebijakan Privasi kami dan menyetujui syarat-syaratnya.</p>
+    <!-- Hero -->
+    <div class="policy-hero">
+      <h1>Kebijakan Privasi<br><span>VidSaver For Shopee Video</span></h1>
+      <div class="last-updated">🗓️ Terakhir diperbarui: Oktober 2026</div>
     </div>
+
+    <div class="policy-body">
+
+      <!-- Daftar Isi -->
+      <div class="policy-toc">
+        <h3>📋 Daftar Isi</h3>
+        <ol>
+          <li><a href="#pendahuluan">Pendahuluan</a></li>
+          <li><a href="#informasi-dikumpulkan">Informasi yang Kami Kumpulkan</a></li>
+          <li><a href="#izin-perangkat">Izin Perangkat</a></li>
+          <li><a href="#penafian-hak-cipta">Penafian Hak Cipta &amp; Merek Dagang</a></li>
+          <li><a href="#hubungi-kami">Hubungi Kami</a></li>
+        </ol>
+      </div>
+
+      <!-- 1. Pendahuluan -->
+      <div class="policy-section" id="pendahuluan">
+        <div class="policy-section-header">
+          <div class="policy-section-icon">👋</div>
+          <h2>1. Pendahuluan</h2>
+        </div>
+        <p>
+          Aplikasi <strong>VidSaver For Shopee Video</strong> ("Kami") menghormati hak privasi pengguna kami.
+          Kebijakan Privasi ini menjelaskan bagaimana informasi ditangani saat Anda menggunakan aplikasi kami.
+        </p>
+        <p>
+          Dengan menggunakan aplikasi ini, Anda menyetujui praktik yang dijelaskan dalam Kebijakan Privasi ini.
+          Kami menganjurkan Anda membaca dokumen ini secara menyeluruh sebelum menggunakan layanan kami.
+        </p>
+      </div>
+
+      <!-- 2. Informasi yang Dikumpulkan -->
+      <div class="policy-section" id="informasi-dikumpulkan">
+        <div class="policy-section-header">
+          <div class="policy-section-icon">🔍</div>
+          <h2>2. Informasi yang Kami Kumpulkan</h2>
+        </div>
+        <div class="info-badge">✅ Tidak Ada Pengumpulan Data Pribadi</div>
+        <p>
+          Aplikasi kami <strong>tidak mengumpulkan informasi identitas pribadi</strong> seperti nama, alamat email,
+          nomor telepon, daftar kontak, atau lokasi geografis pengguna.
+        </p>
+        <ul>
+          <li>
+            <span><strong>Penyimpanan Lokal:</strong> Video yang diunduh disimpan secara lokal langsung ke memori perangkat pengguna (folder <code style="background:rgba(255,255,255,0.08);padding:2px 7px;border-radius:5px;font-size:0.88em;">Movies/VidSaver</code>). Tidak ada file yang diunggah ke server kami.</span>
+          </li>
+          <li>
+            <span><strong>Tautan Publik:</strong> Tautan video Shopee yang diproses pengguna disimpan secara anonim di database awan untuk menyajikan konten feed bersama — tanpa merekam identitas perangkat keras atau data pribadi apapun.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 3. Izin Perangkat -->
+      <div class="policy-section" id="izin-perangkat">
+        <div class="policy-section-header">
+          <div class="policy-section-icon">🔐</div>
+          <h2>3. Izin Perangkat</h2>
+        </div>
+        <div class="info-badge">📡 Hanya Izin Jaringan</div>
+        <p>
+          VidSaver hanya menggunakan izin jaringan untuk menjalankan fungsi utamanya:
+        </p>
+        <ul>
+          <li>
+            <span><strong>INTERNET</strong> — untuk memproses URL video Shopee dan mengunduh video atas permintaan pengguna.</span>
+          </li>
+          <li>
+            <span><strong>ACCESS_NETWORK_STATE</strong> — untuk memeriksa status koneksi internet sebelum memulai proses pengunduhan.</span>
+          </li>
+        </ul>
+        <p style="margin-top: 14px;">
+          Kami tidak meminta izin akses ke kamera, mikrofon, kontak, lokasi, SMS, atau data sensitif lainnya.
+        </p>
+      </div>
+
+      <!-- 4. Penafian Hak Cipta -->
+      <div class="policy-section" id="penafian-hak-cipta">
+        <div class="policy-section-header">
+          <div class="policy-section-icon">⚖️</div>
+          <h2>4. Penafian Hak Cipta &amp; Merek Dagang</h2>
+        </div>
+        <div class="warning-badge">⚠️ Aplikasi Independen — Tidak Berafiliasi dengan Shopee</div>
+        <p>
+          <strong>VidSaver</strong> adalah aplikasi independen dan <strong>TIDAK berafiliasi, didukung, atau
+          disponsori oleh Shopee maupun Sea Group</strong> dalam bentuk apapun.
+        </p>
+        <p>
+          Semua hak cipta, merek dagang, dan konten video sepenuhnya milik masing-masing kreator aslinya.
+          Pengguna bertanggung jawab penuh atas penggunaan konten yang diunduh dan wajib mematuhi hukum hak cipta
+          yang berlaku.
+        </p>
+        <ul>
+          <li>
+            <span>Jangan mendistribusikan ulang atau memperjualbelikan konten yang diunduh tanpa izin dari pemilik hak cipta.</span>
+          </li>
+          <li>
+            <span>Gunakan konten yang diunduh hanya untuk keperluan pribadi, edukasi, atau referensi yang sah.</span>
+          </li>
+          <li>
+            <span>Hormati hak cipta kreator konten dan kebijakan penggunaan platform Shopee.</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 5. Hubungi Kami -->
+      <div class="contact-card" id="hubungi-kami">
+        <div style="font-size: 2.2rem; margin-bottom: 12px;">✉️</div>
+        <h2>5. Hubungi Kami</h2>
+        <p>
+          Jika Anda memiliki pertanyaan, masukan, atau kekhawatiran tentang Kebijakan Privasi ini,
+          silakan hubungi pengembang secara langsung melalui email di bawah ini:
+        </p>
+        <a href="mailto:muhamadabdulbasid182520046@gmail.com" class="email-link">
+          📧 muhamadabdulbasid182520046@gmail.com
+        </a>
+      </div>
+
+    </div><!-- /.policy-body -->
   </main>
 
   <footer>
     <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <a href="/" class="logo"><span>Shopee</span>Saver</a>
+          <p>Layanan gratis ekstraksi dan download video Shopee tanpa watermark berkualitas tinggi secara instan.</p>
+        </div>
+
+        <div class="footer-links">
+          <h4>Navigasi</h4>
+          <ul>
+            <li><a href="/">Beranda</a></li>
+            <li><a href="/contact.html">Kontak</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-links">
+          <h4>Halaman Legal</h4>
+          <ul>
+            <li><a href="/privacy.html">Kebijakan Privasi</a></li>
+            <li><a href="/terms.html">Syarat &amp; Ketentuan</a></li>
+            <li><a href="/contact.html">Kontak Kami</a></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="footer-bottom">
-        <p>&copy; 2026 ShopeeSaver. All Rights Reserved. <a href="/" style="color:var(--primary);">Kembali ke Beranda</a></p>
+        <p>&copy; 2026 ShopeeSaver. All Rights Reserved. Kami tidak terafiliasi secara resmi dengan Shopee Inc.</p>
       </div>
     </div>
   </footer>
