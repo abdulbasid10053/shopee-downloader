@@ -488,6 +488,56 @@ app.get('/api/library', (req, res) => {
 });
 
 /**
+ * Endpoint Feed Global: POST /api/library
+ * Menerima entri metadata video dari aplikasi VidSaver untuk feed global.
+ * Hanya metadata video + kreator Shopee — tanpa identitas user dan tanpa
+ * device ID (upload dari aplikasi bersifat anonim, sesuai keputusan pemilik).
+ * - Validasi: title dan video_url wajib (string non-kosong), selain itu 400.
+ * - Dedup: video_url yang sudah ada hanya menaikkan download_count +
+ *   last_downloaded, lewat saveToLibrary (yang juga punya fallback dedup
+ *   berdasarkan title). Entri baru ditaruh paling depan.
+ * - Kap: daftar dipotong 100 entri terbaru (sama seperti saveToLibrary).
+ * - Baca feed memakai GET /api/library yang sudah ada (param limit).
+ * CATATAN KEAMANAN (v1): endpoint ini tanpa auth — hanya validasi + dedup.
+ * Siapa pun yang tahu URL-nya bisa mengirim entri; itu risiko spam yang
+ * diterima sadar di v1 dan perlu API key / rate limit di iterasi berikutnya.
+ */
+app.post('/api/library', (req, res) => {
+  try {
+    const body = req.body || {};
+    const title = typeof body.title === 'string' ? body.title.trim() : '';
+    const videoUrl = typeof body.video_url === 'string' ? body.video_url.trim() : '';
+    if (!title || !videoUrl) {
+      return res.status(400).json({ status: false, message: 'title dan video_url wajib diisi.' });
+    }
+
+    let existing = [];
+    if (fs.existsSync(LIBRARY_DATA_PATH)) {
+      try { existing = JSON.parse(fs.readFileSync(LIBRARY_DATA_PATH, 'utf-8') || '[]'); } catch (e) { existing = []; }
+    }
+    const deduped = existing.some(item => item.video_url === videoUrl);
+
+    saveToLibrary({
+      title,
+      author: typeof body.author === 'string' && body.author.trim() ? body.author.trim() : 'Kreator Shopee',
+      cover: typeof body.cover === 'string' ? body.cover : '',
+      video_url: videoUrl,
+      duration: Number(body.duration) || 0,
+      quality: typeof body.quality === 'string' && body.quality ? body.quality : 'HD 1080p'
+    });
+
+    return res.json({
+      status: true,
+      deduped,
+      data: { title, video_url: videoUrl }
+    });
+  } catch (err) {
+    console.error('[FEED SUBMIT ERROR]', err.message);
+    return res.status(500).json({ status: false, message: 'Gagal menyimpan entri feed.' });
+  }
+});
+
+/**
  * Helper untuk membersihkan judul agar aman menjadi nama file
  */
 function sanitizeFilename(name) {
